@@ -42,11 +42,7 @@ app.post('/generate-report', async (req, res) => {
 
   try {
 
-    const {
-      address,
-      bathrooms,
-      waterHeater
-    } = req.body;
+const { address, email, bathrooms, waterHeater } = req.body;
 
     const propertyResponse = await axios.get(
       `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
