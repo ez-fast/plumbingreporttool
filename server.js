@@ -93,6 +93,12 @@ Requirements:
 - Avoid technical jargon
 - Recommend preventative maintenance
 - Mention that an inspection is recommended
+IMPORTANT:
+- Do NOT include company names
+- Do NOT include signatures
+- Do NOT include contact information
+- Do NOT include closing statements like "thank you"
+- Output ONLY technical analysis paragraphs
 `;
 
     const completion = await openai.chat.completions.create({
@@ -132,6 +138,15 @@ Requirements:
         potential issues before they become expensive repairs.
       </p>
 
+<hr />
+
+<div style="margin-top:20px;font-size:13px;color:gray;">
+  <strong>EZ-Fast Plumbing</strong><br />
+  Northern Virginia Expert Plumbing Services<br />
+  Phone: 1844-4EZFAST<br />
+  Email: Help@EZ-FAST.com
+</div>
+
       <p style="font-size:12px;color:gray;">
         This report is an automated estimate based on public
         property data and homeowner-provided information.
@@ -139,8 +154,8 @@ Requirements:
       </p>
     `;
 
-await resend.emails.send({
-  from: 'reports@yourdomain.com',
+const emailResult = await resend.emails.send({
+  from: 'onboarding@resend.dev',
   to: email,
   subject: 'Your Home Plumbing Health Report',
   html: `
@@ -148,6 +163,8 @@ await resend.emails.send({
     ${html}
   `
 });
+
+console.log("EMAIL RESULT:", emailResult);
 
     res.json({ report: html });
 
