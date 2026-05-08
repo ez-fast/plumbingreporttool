@@ -154,18 +154,19 @@ IMPORTANT:
       </p>
     `;
 
-await resend.emails.send({
+const emailResult = await resend.emails.send({
   from: 'onboarding@resend.dev',
   to: email,
-  subject: 'Test Email',
-  html: '<h1>If you see this, Resend works</h1>'
+  subject: 'Your Home Plumbing Health Report',
+  html: `
+    <h1>Your Plumbing Health Report</h1>
+    ${html}
+  `
 });
-
-console.log("RESEND RESPONSE:", emailResult);
 
 console.log("EMAIL RESULT:", emailResult);
 
-    res.json({ report: html });
+res.json({ report: html });
 
   } catch (error) {
 
