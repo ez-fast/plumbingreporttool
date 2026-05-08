@@ -4,12 +4,14 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 
 
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import axios from 'axios';
+import OpenAI from 'openai';
+import dotenv from 'dotenv';
+import { Resend } from 'resend';
 
-const express = require('express');
-const cors = require('cors');
-const axios = require('axios');
-const OpenAI = require('openai');
+dotenv.config();
 
 const app = express();
 
