@@ -154,14 +154,11 @@ IMPORTANT:
       </p>
     `;
 
-const emailResult = await resend.emails.send({
-  from: 'help@ez-fast.com',
+await resend.emails.send({
+  from: 'onboarding@resend.dev',
   to: email,
-  subject: 'Your Home Plumbing Health Report',
-  html: `
-    <h1>Your Plumbing Health Report</h1>
-    ${html}
-  `
+  subject: 'Test Email',
+  html: '<h1>If you see this, Resend works</h1>'
 });
 
 console.log("RESEND RESPONSE:", emailResult);
