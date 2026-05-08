@@ -164,6 +164,8 @@ const emailResult = await resend.emails.send({
   `
 });
 
+console.log("RESEND RESPONSE:", emailResult);
+
 console.log("EMAIL RESULT:", emailResult);
 
     res.json({ report: html });
