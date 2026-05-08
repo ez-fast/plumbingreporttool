@@ -139,6 +139,16 @@ Requirements:
       </p>
     `;
 
+await resend.emails.send({
+  from: 'reports@yourdomain.com',
+  to: email,
+  subject: 'Your Home Plumbing Health Report',
+  html: `
+    <h1>Your Plumbing Health Report</h1>
+    ${html}
+  `
+});
+
     res.json({ report: html });
 
   } catch (error) {
@@ -155,14 +165,4 @@ const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-});
-
-await resend.emails.send({
-  from: 'reports@yourdomain.com',
-  to: email,
-  subject: 'Your Home Plumbing Health Report',
-  html: `
-    <h1>Your Plumbing Health Report</h1>
-    ${html}
-  `
 });
