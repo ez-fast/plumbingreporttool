@@ -1,9 +1,3 @@
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
-
-
 import express from 'express';
 import cors from 'cors';
 import axios from 'axios';
@@ -21,6 +15,8 @@ app.use(express.json());
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY
 });
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function calculateRisk(yearBuilt, waterHeater) {
 
