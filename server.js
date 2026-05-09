@@ -195,17 +195,23 @@ IMPORTANT:
       </p>
     `;
 
-const emailResult = await resend.emails.send({
-  from: 'onboarding@resend.dev',
-  to: email,
-  subject: 'Your Home Plumbing Health Report',
-  html: `
-    <h1>Your Plumbing Health Report</h1>
-    ${html}
-  `
-});
+  const emailResult = await resend.emails.send({
+    from: 'onboarding@resend.dev',
+    to: email,
+    subject: 'Your Home Plumbing Health Report',
+    html: `
+      <h1>Your Plumbing Health Report</h1>
+      ${html}
+    `
+  });
 
-console.log("EMAIL RESULT:", emailResult);
+  console.log("EMAIL RESULT:", emailResult);
+
+} catch (emailError) {
+
+  console.error("EMAIL ERROR:", emailError);
+
+}
 
 res.json({ report: html });
 
