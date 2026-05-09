@@ -42,7 +42,7 @@ app.post('/generate-report', async (req, res) => {
 
   try {
 
-const { address, email, bathrooms, waterHeater } = req.body;
+const { address, email, bathrooms, waterHeater, zip } = req.body;
 
     const propertyResponse = await axios.get(
       `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
@@ -60,6 +60,26 @@ const { address, email, bathrooms, waterHeater } = req.body;
     const risk = calculateRisk(yearBuilt, waterHeater);
 
     let concerns = [];
+let locationRisks = [];
+let infrastructureRisks = [];
+
+if (zip) {
+
+  // Northern Virginia high-growth zones
+  if (zip.startsWith("201") || zip.startsWith("220") || zip.startsWith("221")) {
+    locationRisks.push(
+      "Northern Virginia high-growth residential zone with mixed plumbing systems across multiple construction eras."
+    );
+  }
+
+  // Older suburban infrastructure
+  if (zip.startsWith("221") || zip.startsWith("220")) {
+    infrastructureRisks.push(
+      "Older Fairfax / Arlington-era infrastructure may include aging copper or galvanized piping in legacy homes."
+    );
+  }
+
+}
 
 let novaRisks = [];
 
@@ -81,6 +101,18 @@ if (yearBuilt >= 1990 && yearBuilt <= 2010) {
   );
 }
 
+if (yearBuilt < 1980) {
+  infrastructureRisks.push("High probability of galvanized steel piping in original plumbing systems.");
+}
+
+if (yearBuilt >= 1980 && yearBuilt <= 1995) {
+  infrastructureRisks.push("Potential polybutylene piping risk window in regional construction.");
+}
+
+if (yearBuilt >= 1995 && yearBuilt <= 2010) {
+  infrastructureRisks.push("Builder-grade plumbing systems approaching major maintenance lifecycle.");
+}
+
 let waterHeaterEstimate = '';
 
 if (waterHeater === 'yes') {
@@ -91,6 +123,20 @@ if (waterHeater === 'yes') {
   } else {
     waterHeaterEstimate =
       'The water heater may still be within a normal service window depending on maintenance history.';
+  }
+
+}
+
+let waterHeaterInsight = "";
+
+if (waterHeater === 'yes') {
+
+  const age = new Date().getFullYear() - yearBuilt;
+
+  if (age > 15) {
+    waterHeaterInsight = "Water heater likely approaching or beyond typical 10–15 year service life.";
+  } else {
+    waterHeaterInsight = "Water heater likely within normal service range but should be inspected for sediment buildup.";
   }
 
 }
@@ -123,17 +169,33 @@ ${concerns.join(', ')}
 Northern Virginia Risk Factors:
 ${novaRisks.join(', ')}
 
+Location-Based Risk Factors:
+${locationRisks.join(", ")}
+
+Infrastructure Risk Factors:
+${infrastructureRisks.join(", ")}
+
 Water Heater Assessment:
 ${waterHeaterEstimate}
 
+Water Heater Analysis:
+${waterHeaterInsight}
 
 Requirements:
 - Sound trustworthy
 - Be educational
-- Avoid fear tactics
 - Avoid technical jargon
 - Recommend preventative maintenance
 - Mention that an inspection is recommended
+- Be concise and highly practical
+- Prioritize location-specific insights
+- Focus on homeowner risk awareness
+- Avoid generic advice
+- Avoid fear tactics
+- Do NOT exaggerate risks
+- Use clear, non-technical language
+- Always recommend inspection if moderate/high risk
+
 IMPORTANT:
 - Do NOT include company names
 - Do NOT include signatures
