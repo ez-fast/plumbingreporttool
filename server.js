@@ -61,6 +61,40 @@ const { address, email, bathrooms, waterHeater } = req.body;
 
     let concerns = [];
 
+let novaRisks = [];
+
+if (yearBuilt >= 1978 && yearBuilt <= 1995) {
+  novaRisks.push(
+    'Northern Virginia homes built during this period may contain polybutylene piping.'
+  );
+}
+
+if (yearBuilt < 1985) {
+  novaRisks.push(
+    'Older Northern Virginia homes may have aging copper shutoff valves and higher leak risk.'
+  );
+}
+
+if (yearBuilt >= 1990 && yearBuilt <= 2010) {
+  novaRisks.push(
+    'Homes in this era may have builder-grade water heaters nearing replacement age.'
+  );
+}
+
+let waterHeaterEstimate = '';
+
+if (waterHeater === 'yes') {
+
+  if (yearBuilt < 2010) {
+    waterHeaterEstimate =
+      'The home may contain an older water heater approaching the end of its expected service life.';
+  } else {
+    waterHeaterEstimate =
+      'The water heater may still be within a normal service window depending on maintenance history.';
+  }
+
+}
+
     if (yearBuilt >= 1978 && yearBuilt <= 1995) {
       concerns.push('Potential polybutylene piping');
     }
@@ -85,6 +119,13 @@ Home Information:
 
 Potential Concerns:
 ${concerns.join(', ')}
+
+Northern Virginia Risk Factors:
+${novaRisks.join(', ')}
+
+Water Heater Assessment:
+${waterHeaterEstimate}
+
 
 Requirements:
 - Sound trustworthy
