@@ -196,7 +196,7 @@ IMPORTANT:
     `;
 
   const emailResult = await resend.emails.send({
-    from: 'onboarding@resend.dev',
+    from: 'EZ Fast Plumbing <help@ez-fast.com>',
     to: email,
     subject: 'Your Home Plumbing Health Report',
     html: `
