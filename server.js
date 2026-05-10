@@ -42,7 +42,14 @@ app.post('/generate-report', async (req, res) => {
 
   try {
 
-const { address, email, bathrooms, waterHeater, zip } = req.body;
+const {
+  address,
+  email,
+  bathrooms,
+  waterHeater,
+  zip,
+  notes
+} = req.body;
 
     const propertyResponse = await axios.get(
       `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
@@ -163,6 +170,9 @@ Home Information:
 - Bathrooms: ${bathrooms}
 - Overall Risk: ${risk}
 
+Homeowner Reported Concerns:
+${notes}
+
 Potential Concerns:
 ${concerns.join(', ')}
 
@@ -194,6 +204,10 @@ Requirements:
 - Avoid fear tactics
 - Do NOT exaggerate risks
 - Use clear, non-technical language
+- Analyze the homeowner-reported concerns carefully
+- Explain possible causes without overstating certainty
+- Prioritize practical observations
+- Mention when symptoms may warrant inspection
 - Always recommend inspection if moderate/high risk
 
 IMPORTANT:
@@ -202,6 +216,8 @@ IMPORTANT:
 - Do NOT include contact information
 - Do NOT include closing statements like "thank you"
 - Output ONLY technical analysis paragraphs
+- Do not diagnose with certainty
+- Avoid emergency language unless clearly warranted
 `;
 
     const completion = await openai.chat.completions.create({
