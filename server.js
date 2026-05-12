@@ -4,10 +4,15 @@ import axios from 'axios';
 import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import { Resend } from 'resend';
+import multer from 'multer';
 
 dotenv.config();
 
 const app = express();
+
+const upload = multer({
+  storage: multer.memoryStorage()
+});
 
 app.use(cors());
 app.use(express.json());
@@ -23,7 +28,53 @@ function calculateRisk(yearBuilt, waterHeater) {
   const currentYear = new Date().getFullYear();
   const age = currentYear - yearBuilt;
 
-  let risk = 'Low';
+let recommendedServices = [];
+
+if (lowerNotes.includes('water heater')) {
+  recommendedServices.push(
+    'Water Heater Inspection'
+  );
+}
+
+if (lowerNotes.includes('drain')) {
+  recommendedServices.push(
+    'Drain Cleaning Evaluation'
+  );
+}
+
+if (lowerNotes.includes('pressure')) {
+  recommendedServices.push(
+    'Water Pressure Diagnostic'
+  );
+}
+
+if (lowerNotes.includes('leak')) {
+  recommendedServices.push(
+    'Leak Detection Inspection'
+  );
+}
+
+let urgency = 'Low';  
+
+const lowerNotes = notes.toLowerCase();
+
+if (
+  lowerNotes.includes('leak') ||
+  lowerNotes.includes('burst') ||
+  lowerNotes.includes('flood') ||
+  lowerNotes.includes('sewer smell')
+) {
+  urgency = 'High';
+}
+else if (
+  lowerNotes.includes('low pressure') ||
+  lowerNotes.includes('slow drain') ||
+  lowerNotes.includes('noise')
+) {
+  urgency = 'Moderate';
+}
+
+let risk = 'Low';
 
   if (age > 40) {
     risk = 'High';
@@ -38,19 +89,13 @@ function calculateRisk(yearBuilt, waterHeater) {
   return risk;
 }
 
-app.post('/generate-report', async (req, res) => {
+app.post('/generate-report', upload.single('photo'), async (req, res) => {
 
   try {
 
-const {
-  address,
-  email,
-  bathrooms,
-  waterHeater,
-  zip,
-  notes
-} = req.body;
+const { address, email, bathrooms, waterHeater, zip, notes, reportType } = req.body;
 
+const photo = req.file;
     const propertyResponse = await axios.get(
       `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
       {
@@ -68,6 +113,24 @@ const {
 
     let concerns = [];
 let locationRisks = [];
+
+let realEstateInsights = '';
+
+if (reportType === 'buyer') {
+  realEstateInsights =
+    'Focus on potential hidden plumbing risks a buyer should investigate before purchase.';
+}
+
+if (reportType === 'seller') {
+  realEstateInsights =
+    'Focus on maintenance items that may help avoid inspection objections during sale.';
+}
+
+if (reportType === 'investor') {
+  realEstateInsights =
+    'Focus on long-term plumbing reliability and future capital expenditure risks.';
+}
+
 let infrastructureRisks = [];
 
 if (zip) {
@@ -160,6 +223,38 @@ if (waterHeater === 'yes') {
       concerns.push('Water heater may be approaching end-of-life');
     }
 
+let visionAnalysis = '';
+
+if (photo) {
+
+  const base64Image = photo.buffer.toString('base64');
+
+  const visionResponse = await openai.chat.completions.create({
+    model: 'gpt-4.1-mini',
+    messages: [
+      {
+        role: 'user',
+        content: [
+          {
+            type: 'text',
+            text:
+              'Analyze this plumbing-related image. Describe any visible plumbing concerns, corrosion, leaks, aging materials, water damage, or maintenance issues.'
+          },
+          {
+            type: 'image_url',
+            image_url: {
+              url: `data:${photo.mimetype};base64,${base64Image}`
+            }
+          }
+        ]
+      }
+    ]
+  });
+
+  visionAnalysis =
+    visionResponse.choices[0].message.content;
+}
+
     const prompt = `
 You are an expert plumber in Northern Virginia.
 
@@ -190,6 +285,12 @@ ${waterHeaterEstimate}
 
 Water Heater Analysis:
 ${waterHeaterInsight}
+
+Photo Analysis:
+${visionAnalysis}
+
+Real Estate Context:
+${realEstateInsights}
 
 Requirements:
 - Sound trustworthy
@@ -238,6 +339,8 @@ IMPORTANT:
       <p><strong>Estimated Year Built:</strong> ${yearBuilt}</p>
 
       <p><strong>Overall Plumbing Risk:</strong> ${risk}</p>
+ 
+<p><strong>Urgency Level:</strong> ${urgency}</p>
 
       <h3>Potential Concerns</h3>
 
@@ -256,6 +359,14 @@ IMPORTANT:
         Schedule a whole-home plumbing inspection to identify
         potential issues before they become expensive repairs.
       </p>
+
+<h3>Recommended Services</h3>
+
+<ul>
+  ${recommendedServices
+    .map(s => `<li>${s}</li>`)
+    .join('')}
+</ul>
 
 <hr />
 
