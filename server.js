@@ -28,53 +28,7 @@ function calculateRisk(yearBuilt, waterHeater) {
   const currentYear = new Date().getFullYear();
   const age = currentYear - yearBuilt;
 
-let recommendedServices = [];
-
-if (lowerNotes.includes('water heater')) {
-  recommendedServices.push(
-    'Water Heater Inspection'
-  );
-}
-
-if (lowerNotes.includes('drain')) {
-  recommendedServices.push(
-    'Drain Cleaning Evaluation'
-  );
-}
-
-if (lowerNotes.includes('pressure')) {
-  recommendedServices.push(
-    'Water Pressure Diagnostic'
-  );
-}
-
-if (lowerNotes.includes('leak')) {
-  recommendedServices.push(
-    'Leak Detection Inspection'
-  );
-}
-
-let urgency = 'Low';  
-
-const lowerNotes = notes.toLowerCase();
-
-if (
-  lowerNotes.includes('leak') ||
-  lowerNotes.includes('burst') ||
-  lowerNotes.includes('flood') ||
-  lowerNotes.includes('sewer smell')
-) {
-  urgency = 'High';
-}
-else if (
-  lowerNotes.includes('low pressure') ||
-  lowerNotes.includes('slow drain') ||
-  lowerNotes.includes('noise')
-) {
-  urgency = 'Moderate';
-}
-
-let risk = 'Low';
+  let risk = 'Low';
 
   if (age > 40) {
     risk = 'High';
@@ -89,173 +43,292 @@ let risk = 'Low';
   return risk;
 }
 
-app.post('/generate-report', upload.single('photo'), async (req, res) => {
+app.post(
+  '/generate-report',
+  upload.single('photo'),
+  async (req, res) => {
 
-  try {
+    try {
 
-const { address, email, bathrooms, waterHeater, zip, notes, reportType } = req.body;
+      const {
+        address,
+        email,
+        bathrooms,
+        waterHeater,
+        zip,
+        notes,
+        reportType
+      } = req.body;
 
-const photo = req.file;
-    const propertyResponse = await axios.get(
-      `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
-      {
-        headers: {
-          'X-Api-Key': process.env.RENTCAST_API_KEY
-        }
-      }
-    );
+      const photo = req.file;
 
-    const property = propertyResponse.data[0];
-
-    const yearBuilt = property?.yearBuilt || 1990;
-
-    const risk = calculateRisk(yearBuilt, waterHeater);
-
-    let concerns = [];
-let locationRisks = [];
-
-let realEstateInsights = '';
-
-if (reportType === 'buyer') {
-  realEstateInsights =
-    'Focus on potential hidden plumbing risks a buyer should investigate before purchase.';
-}
-
-if (reportType === 'seller') {
-  realEstateInsights =
-    'Focus on maintenance items that may help avoid inspection objections during sale.';
-}
-
-if (reportType === 'investor') {
-  realEstateInsights =
-    'Focus on long-term plumbing reliability and future capital expenditure risks.';
-}
-
-let infrastructureRisks = [];
-
-if (zip) {
-
-  // Northern Virginia high-growth zones
-  if (zip.startsWith("201") || zip.startsWith("220") || zip.startsWith("221")) {
-    locationRisks.push(
-      "Northern Virginia high-growth residential zone with mixed plumbing systems across multiple construction eras."
-    );
-  }
-
-  // Older suburban infrastructure
-  if (zip.startsWith("221") || zip.startsWith("220")) {
-    infrastructureRisks.push(
-      "Older Fairfax / Arlington-era infrastructure may include aging copper or galvanized piping in legacy homes."
-    );
-  }
-
-}
-
-let novaRisks = [];
-
-if (yearBuilt >= 1978 && yearBuilt <= 1995) {
-  novaRisks.push(
-    'Northern Virginia homes built during this period may contain polybutylene piping.'
-  );
-}
-
-if (yearBuilt < 1985) {
-  novaRisks.push(
-    'Older Northern Virginia homes may have aging copper shutoff valves and higher leak risk.'
-  );
-}
-
-if (yearBuilt >= 1990 && yearBuilt <= 2010) {
-  novaRisks.push(
-    'Homes in this era may have builder-grade water heaters nearing replacement age.'
-  );
-}
-
-if (yearBuilt < 1980) {
-  infrastructureRisks.push("High probability of galvanized steel piping in original plumbing systems.");
-}
-
-if (yearBuilt >= 1980 && yearBuilt <= 1995) {
-  infrastructureRisks.push("Potential polybutylene piping risk window in regional construction.");
-}
-
-if (yearBuilt >= 1995 && yearBuilt <= 2010) {
-  infrastructureRisks.push("Builder-grade plumbing systems approaching major maintenance lifecycle.");
-}
-
-let waterHeaterEstimate = '';
-
-if (waterHeater === 'yes') {
-
-  if (yearBuilt < 2010) {
-    waterHeaterEstimate =
-      'The home may contain an older water heater approaching the end of its expected service life.';
-  } else {
-    waterHeaterEstimate =
-      'The water heater may still be within a normal service window depending on maintenance history.';
-  }
-
-}
-
-let waterHeaterInsight = "";
-
-if (waterHeater === 'yes') {
-
-  const age = new Date().getFullYear() - yearBuilt;
-
-  if (age > 15) {
-    waterHeaterInsight = "Water heater likely approaching or beyond typical 10–15 year service life.";
-  } else {
-    waterHeaterInsight = "Water heater likely within normal service range but should be inspected for sediment buildup.";
-  }
-
-}
-
-    if (yearBuilt >= 1978 && yearBuilt <= 1995) {
-      concerns.push('Potential polybutylene piping');
-    }
-
-    if (yearBuilt < 1990) {
-      concerns.push('Possible aging shutoff valves');
-    }
-
-    if (waterHeater === 'yes') {
-      concerns.push('Water heater may be approaching end-of-life');
-    }
-
-let visionAnalysis = '';
-
-if (photo) {
-
-  const base64Image = photo.buffer.toString('base64');
-
-  const visionResponse = await openai.chat.completions.create({
-    model: 'gpt-4.1-mini',
-    messages: [
-      {
-        role: 'user',
-        content: [
-          {
-            type: 'text',
-            text:
-              'Analyze this plumbing-related image. Describe any visible plumbing concerns, corrosion, leaks, aging materials, water damage, or maintenance issues.'
-          },
-          {
-            type: 'image_url',
-            image_url: {
-              url: `data:${photo.mimetype};base64,${base64Image}`
-            }
+      const propertyResponse = await axios.get(
+        `https://api.rentcast.io/v1/properties?address=${encodeURIComponent(address)}`,
+        {
+          headers: {
+            'X-Api-Key': process.env.RENTCAST_API_KEY
           }
-        ]
+        }
+      );
+
+      const property = propertyResponse.data[0];
+
+      const yearBuilt = property?.yearBuilt || 1990;
+
+      const risk = calculateRisk(
+        yearBuilt,
+        waterHeater
+      );
+
+      const lowerNotes = (notes || '').toLowerCase();
+
+      // -----------------------------
+      // Urgency Detection
+      // -----------------------------
+
+      let urgency = 'Low';
+
+      if (
+        lowerNotes.includes('leak') ||
+        lowerNotes.includes('burst') ||
+        lowerNotes.includes('flood') ||
+        lowerNotes.includes('sewer smell')
+      ) {
+        urgency = 'High';
       }
-    ]
-  });
+      else if (
+        lowerNotes.includes('low pressure') ||
+        lowerNotes.includes('slow drain') ||
+        lowerNotes.includes('noise')
+      ) {
+        urgency = 'Moderate';
+      }
 
-  visionAnalysis =
-    visionResponse.choices[0].message.content;
-}
+      // -----------------------------
+      // Service Recommendations
+      // -----------------------------
 
-    const prompt = `
+      let recommendedServices = [];
+
+      if (lowerNotes.includes('water heater')) {
+        recommendedServices.push(
+          'Water Heater Inspection'
+        );
+      }
+
+      if (lowerNotes.includes('drain')) {
+        recommendedServices.push(
+          'Drain Cleaning Evaluation'
+        );
+      }
+
+      if (lowerNotes.includes('pressure')) {
+        recommendedServices.push(
+          'Water Pressure Diagnostic'
+        );
+      }
+
+      if (lowerNotes.includes('leak')) {
+        recommendedServices.push(
+          'Leak Detection Inspection'
+        );
+      }
+
+      // -----------------------------
+      // Concerns
+      // -----------------------------
+
+      let concerns = [];
+
+      if (yearBuilt >= 1978 && yearBuilt <= 1995) {
+        concerns.push(
+          'Potential polybutylene piping'
+        );
+      }
+
+      if (yearBuilt < 1990) {
+        concerns.push(
+          'Possible aging shutoff valves'
+        );
+      }
+
+      if (waterHeater === 'yes') {
+        concerns.push(
+          'Water heater may be approaching end-of-life'
+        );
+      }
+
+      // -----------------------------
+      // Location Risk Factors
+      // -----------------------------
+
+      let locationRisks = [];
+
+      if (zip) {
+
+        if (
+          zip.startsWith('201') ||
+          zip.startsWith('220') ||
+          zip.startsWith('221')
+        ) {
+          locationRisks.push(
+            'Northern Virginia high-growth residential zone with mixed plumbing systems across multiple construction eras.'
+          );
+        }
+
+      }
+
+      // -----------------------------
+      // Infrastructure Risks
+      // -----------------------------
+
+      let infrastructureRisks = [];
+
+      if (yearBuilt < 1980) {
+        infrastructureRisks.push(
+          'High probability of galvanized steel piping in original plumbing systems.'
+        );
+      }
+
+      if (yearBuilt >= 1980 && yearBuilt <= 1995) {
+        infrastructureRisks.push(
+          'Potential polybutylene piping risk window in regional construction.'
+        );
+      }
+
+      if (yearBuilt >= 1995 && yearBuilt <= 2010) {
+        infrastructureRisks.push(
+          'Builder-grade plumbing systems approaching major maintenance lifecycle.'
+        );
+      }
+
+      // -----------------------------
+      // Northern Virginia Insights
+      // -----------------------------
+
+      let novaRisks = [];
+
+      if (yearBuilt >= 1978 && yearBuilt <= 1995) {
+        novaRisks.push(
+          'Northern Virginia homes built during this period may contain polybutylene piping.'
+        );
+      }
+
+      if (yearBuilt < 1985) {
+        novaRisks.push(
+          'Older Northern Virginia homes may have aging copper shutoff valves and higher leak risk.'
+        );
+      }
+
+      if (yearBuilt >= 1990 && yearBuilt <= 2010) {
+        novaRisks.push(
+          'Homes in this era may have builder-grade water heaters nearing replacement age.'
+        );
+      }
+
+      // -----------------------------
+      // Water Heater Insights
+      // -----------------------------
+
+      let waterHeaterEstimate = '';
+
+      if (waterHeater === 'yes') {
+
+        if (yearBuilt < 2010) {
+          waterHeaterEstimate =
+            'The home may contain an older water heater approaching the end of its expected service life.';
+        } else {
+          waterHeaterEstimate =
+            'The water heater may still be within a normal service window depending on maintenance history.';
+        }
+
+      }
+
+      let waterHeaterInsight = '';
+
+      if (waterHeater === 'yes') {
+
+        const age =
+          new Date().getFullYear() - yearBuilt;
+
+        if (age > 15) {
+          waterHeaterInsight =
+            'Water heater likely approaching or beyond typical 10–15 year service life.';
+        } else {
+          waterHeaterInsight =
+            'Water heater likely within normal service range but should be inspected for sediment buildup.';
+        }
+
+      }
+
+      // -----------------------------
+      // Real Estate Context
+      // -----------------------------
+
+      let realEstateInsights = '';
+
+      if (reportType === 'buyer') {
+        realEstateInsights =
+          'Focus on potential hidden plumbing risks a buyer should investigate before purchase.';
+      }
+
+      if (reportType === 'seller') {
+        realEstateInsights =
+          'Focus on maintenance items that may help avoid inspection objections during sale.';
+      }
+
+      if (reportType === 'investor') {
+        realEstateInsights =
+          'Focus on long-term plumbing reliability and future capital expenditure risks.';
+      }
+
+      // -----------------------------
+      // Photo Analysis
+      // -----------------------------
+
+      let visionAnalysis = '';
+
+      if (photo) {
+
+        const base64Image =
+          photo.buffer.toString('base64');
+
+        const visionResponse =
+          await openai.chat.completions.create({
+            model: 'gpt-4.1-mini',
+            messages: [
+              {
+                role: 'user',
+                content: [
+                  {
+                    type: 'text',
+                    text:
+                      'Analyze this plumbing-related image. Describe visible plumbing concerns, corrosion, leaks, aging materials, water damage, or maintenance issues.'
+                  },
+                  {
+                    type: 'image_url',
+                    image_url: {
+                      url:
+                        `data:${photo.mimetype};base64,${base64Image}`
+                    }
+                  }
+                ]
+              }
+            ]
+          });
+
+        visionAnalysis =
+          visionResponse
+            .choices[0]
+            .message
+            .content;
+      }
+
+      // -----------------------------
+      // AI Prompt
+      // -----------------------------
+
+      const prompt = `
 You are an expert plumber in Northern Virginia.
 
 Write a homeowner-friendly plumbing health report.
@@ -264,9 +337,10 @@ Home Information:
 - Year Built: ${yearBuilt}
 - Bathrooms: ${bathrooms}
 - Overall Risk: ${risk}
+- Urgency Level: ${urgency}
 
 Homeowner Reported Concerns:
-${notes}
+${notes || 'None provided'}
 
 Potential Concerns:
 ${concerns.join(', ')}
@@ -275,10 +349,10 @@ Northern Virginia Risk Factors:
 ${novaRisks.join(', ')}
 
 Location-Based Risk Factors:
-${locationRisks.join(", ")}
+${locationRisks.join(', ')}
 
 Infrastructure Risk Factors:
-${infrastructureRisks.join(", ")}
+${infrastructureRisks.join(', ')}
 
 Water Heater Assessment:
 ${waterHeaterEstimate}
@@ -287,7 +361,7 @@ Water Heater Analysis:
 ${waterHeaterInsight}
 
 Photo Analysis:
-${visionAnalysis}
+${visionAnalysis || 'No photo uploaded'}
 
 Real Estate Context:
 ${realEstateInsights}
@@ -297,127 +371,175 @@ Requirements:
 - Be educational
 - Avoid technical jargon
 - Recommend preventative maintenance
-- Mention that an inspection is recommended
-- Be concise and highly practical
+- Mention when inspection is recommended
+- Be concise and practical
 - Prioritize location-specific insights
 - Focus on homeowner risk awareness
-- Avoid generic advice
 - Avoid fear tactics
+- Avoid generic advice
 - Do NOT exaggerate risks
-- Use clear, non-technical language
-- Analyze the homeowner-reported concerns carefully
-- Explain possible causes without overstating certainty
-- Prioritize practical observations
-- Mention when symptoms may warrant inspection
-- Always recommend inspection if moderate/high risk
+- Use clear homeowner language
+- Do not diagnose with certainty
 
 IMPORTANT:
 - Do NOT include company names
 - Do NOT include signatures
 - Do NOT include contact information
-- Do NOT include closing statements like "thank you"
 - Output ONLY technical analysis paragraphs
-- Do not diagnose with certainty
-- Avoid emergency language unless clearly warranted
 `;
 
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4.1-mini',
-      messages: [
-        {
-          role: 'user',
-          content: prompt
-        }
-      ]
-    });
+      const completion =
+        await openai.chat.completions.create({
+          model: 'gpt-4.1-mini',
+          messages: [
+            {
+              role: 'user',
+              content: prompt
+            }
+          ]
+        });
 
-    const aiSummary = completion.choices[0].message.content;
+      const aiSummary =
+        completion.choices[0].message.content;
 
-    const html = `
-      <h2>Home Plumbing Health Report</h2>
+      // -----------------------------
+      // HTML Report
+      // -----------------------------
 
-      <p><strong>Estimated Year Built:</strong> ${yearBuilt}</p>
+      const html = `
+        <h2>Home Plumbing Health Report</h2>
 
-      <p><strong>Overall Plumbing Risk:</strong> ${risk}</p>
- 
-<p><strong>Urgency Level:</strong> ${urgency}</p>
+        <p>
+          <strong>Estimated Year Built:</strong>
+          ${yearBuilt}
+        </p>
 
-      <h3>Potential Concerns</h3>
+        <p>
+          <strong>Overall Plumbing Risk:</strong>
+          ${risk}
+        </p>
 
-      <ul>
-        ${concerns.map(c => `<li>${c}</li>`).join('')}
-      </ul>
+        <p>
+          <strong>Urgency Level:</strong>
+          <span style="
+            color:
+              ${urgency === 'High'
+                ? 'red'
+                : urgency === 'Moderate'
+                ? 'orange'
+                : 'green'
+              };
+            font-weight:bold;
+          ">
+            ${urgency}
+          </span>
+        </p>
 
-      <h3>Professional Summary</h3>
+        <h3>Potential Concerns</h3>
 
-      <p>${aiSummary}</p>
+        <ul>
+          ${concerns
+            .map(c => `<li>${c}</li>`)
+            .join('')}
+        </ul>
 
-      <hr />
+        <h3>Recommended Services</h3>
 
-      <p>
-        <strong>Recommended Next Step:</strong><br />
-        Schedule a whole-home plumbing inspection to identify
-        potential issues before they become expensive repairs.
-      </p>
+        <ul>
+          ${recommendedServices
+            .map(s => `<li>${s}</li>`)
+            .join('')}
+        </ul>
 
-<h3>Recommended Services</h3>
+        <h3>Professional Summary</h3>
 
-<ul>
-  ${recommendedServices
-    .map(s => `<li>${s}</li>`)
-    .join('')}
-</ul>
+        <p>${aiSummary}</p>
 
-<hr />
+        <hr />
 
-<div style="margin-top:20px;font-size:13px;color:gray;">
-  <strong>EZ-Fast Plumbing</strong><br />
-  Northern Virginia Expert Plumbing Services<br />
-  Phone: 1844-4EZFAST<br />
-  Email: Help@EZ-FAST.com
-</div>
+        <p>
+          <strong>Recommended Next Step:</strong><br />
+          Schedule a whole-home plumbing inspection
+          to identify potential issues before they
+          become expensive repairs.
+        </p>
 
-      <p style="font-size:12px;color:gray;">
-        This report is an automated estimate based on public
-        property data and homeowner-provided information.
-        It is not a plumbing inspection.
-      </p>
-    `;
+        <hr />
 
- try {
+        <div style="
+          margin-top:20px;
+          font-size:13px;
+          color:gray;
+        ">
+          <strong>EZ-Fast Plumbing</strong><br />
+          Northern Virginia Expert Plumbing Services<br />
+          Phone: 1-844-4EZFAST<br />
+          Email: help@ez-fast.com
+        </div>
 
-  const emailResult = await resend.emails.send({
-    from: 'EZ Fast Plumbing <help@ez-fast.com>',
-    to: email,
-    subject: 'Your Home Plumbing Health Report',
-    html: `
-      <h1>Your Plumbing Health Report</h1>
-      ${html}
-    `
-  });
+        <p style="
+          font-size:12px;
+          color:gray;
+        ">
+          This report is an automated estimate
+          based on public property data and
+          homeowner-provided information.
+          It is not a plumbing inspection.
+        </p>
+      `;
 
-  console.log("EMAIL RESULT:", emailResult);
+      // -----------------------------
+      // Send Email
+      // -----------------------------
 
-} catch (emailError) {
+      try {
 
-  console.error("EMAIL ERROR:", emailError);
+        const emailResult =
+          await resend.emails.send({
+            from:
+              'EZ Fast Plumbing <help@ez-fast.com>',
+            to: email,
+            subject:
+              'Your Home Plumbing Health Report',
+            html: `
+              <h1>Your Plumbing Health Report</h1>
+              ${html}
+            `
+          });
 
-}
+        console.log(
+          'EMAIL RESULT:',
+          emailResult
+        );
 
-res.json({ report: html });
+      } catch (emailError) {
 
-  } catch (error) {
+        console.error(
+          'EMAIL ERROR:',
+          emailError
+        );
 
-    console.error(error);
+      }
 
-    res.status(500).json({
-      error: 'Failed to generate report'
-    });
+      res.json({ report: html });
+
+    } catch (error) {
+
+      console.error(error);
+
+      res.status(500).json({
+        error: 'Failed to generate report'
+      });
+
+    }
+
   }
-});
+);
 
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(
+    `Server running on port ${PORT}`
+  );
 });
